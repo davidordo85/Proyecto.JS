@@ -1,29 +1,65 @@
-let plan = [
-    "                                                                                ",
-    "                                                                                ",
-    "                                                                                ",
-    "                                                                                ",
-    "                                                                                ",
-    "                                                                                ",
-    "                                                                   xxx          ",
-    "                                                    xx      xx    xx!xx         ",
-    "                                     o o      xx                  x!!!x         ",
-    "                                                                  xx!xx         ",
-    "                                    xxxxx                          xVx          ",
-    "                                                                            xx  ",
-    "  xx                                       o o                               x  ",
-    "  x                       o                                                  x  ",
-    "  x                                       xxxxx                            o x  ",
-    "  x           xxxx        o                                                  x  ",
-    "  x  @        x  x                                                xxxxx      x  ",
-    "  xxxxxxxxxxxxx  xxxxxxxxxxxxxxxx   xxxxxxxxxxxxxxxxxxx     xxxxxxx   xxxxxxxx  ",
-    "                                x   x                 x     x                   ",
-    "                                x!!!x                 x!!!!!x                   ",
-    "                                x!!!x                 x!!!!!x                   ",
-    "                                xxxxx                 xxxxxxx                   ",
-    "                                                                                ",
-    "                                                                                ",
-];
+const ARROW_CODES = {
+    37: 'leFt',
+    38: 'up',
+    39: 'right'
+}
 
-let level = new Level(plan);
-let display = new DOMDisplay(document.body, level)
+let arrows = trackKeys(ARROW_CODES);
+
+function trackKeys (keyCodes) {
+    let pressedKeys = {};
+    function handler (event) {
+        if (keyCodes.hasOwnProperty(event.keyCode)) {
+            let downPressed = event.type === 'keydown';
+            pressedKeys[keyCodes[event.keyCode]] = downPressed;
+            event.preventDefault();
+        }
+    }
+    addEventListener('keydown', handler);
+    addEventListener('keyup', handler);
+
+    return pressedKeys;
+}
+
+function runAnimation (frameFunction) {
+    let lastTime = null;
+    function frame (time) {
+        let stop = false;
+        if (lastTime !== null) {
+            let timeStep = Math.min(time - lastTime, 100) / 1000
+            stop = frameFunction(timeStep) === false;
+        }
+        lastTime = time;
+        if (!stop) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+}
+
+function runLevel(level, Display, callback) {
+    let display = new Display(document.body, level);
+    runAnimation(function (step) {
+        level.animate(step, arrows);
+        display.drawFrame();
+        if (level.isFinshed()) {
+            display.clear();
+            if (callback) callback(level.status);
+            return false;
+        }
+    })
+}
+
+function runGame (level, Display) {
+    let levelObject;
+    try {
+        levelObject = new Level(GAME_LEVELS);
+    } catch (error) {
+        return alert(error.message);
+    }
+    
+    runLevel (levelObject, Display, status => {
+        if (status === 'lost') console.log('¡has perdido');
+        else console.log('has ganado!!!');
+    });
+}
+
+runGame(GAME_LEVELS, DOMDisplay);

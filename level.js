@@ -1,9 +1,15 @@
 const ACTORS = {
-    'o': Coin
+    'o': Coin,
+    '@': Player,
+    '=': Lava,
+    '|': Lava,
+    'v': Lava
 };
-
+const MAX_STEP = 0.05;
 
 function Level (plan) {
+    if (!validateLevel(plan)) throw new Error('You need a player and a coin');
+
     this.width = plan[0].length;
     this.height = plan.length;
     this.status = null;
@@ -21,6 +27,7 @@ function Level (plan) {
 
             let Actor = ACTORS[character];
             if (Actor) this.actors.push(new Actor(new Vector(x, y), character));
+
             if (character === 'x') characterType = 'wall';
             else if (character === '!') characterType = 'lava';
 
@@ -28,8 +35,41 @@ function Level (plan) {
         }
         this.grid.push(gridLine);
     }
+
+    this.actor = this.actors.filter(actor => actor.type === 'player')[0];
 }
 
 Level.prototype.isFinshed = function () {
     return (this.status !== null && this.finishDelay < 0);
+}
+
+Level.prototype.animate = function (step, keys) {
+    if (this.status !==null) this.finishDelay -= step;
+
+    while (step > 0) {
+        let thisStep = Math.min(step, MAX_STEP);
+        this.actors.forEach(actor => actor.act(thisStep, this, keys));
+        step -= thisStep;
+    }
+}
+
+Level.prototype.obstableAt = function (position, size) {
+    let xStart = Math.floor(position.x);
+    let xEnd = Math.ceil(position.x);
+    let yStart = Math.floor(position.y);
+    let yEnd = Math.ceil(position.y);
+
+    if (xStart < 0 || xEnd > this.width || yStart <0) return 'wall';
+    if (yEnd > this.height) return 'lava';
+
+    for (let y = yStart; y < yEnd; y++) {
+        for (let x = xStart; x < xEnd; x++) {
+            let fieldType = this.grid[y][x];
+            if (fieldType) return fieldType;
+        }
+    }
+}
+
+function validateLevel (level) {
+    return (level.some(row => row.indexOf('@') !== -1) && level.some(row => row.indexOf('o') !== -1));
 }
