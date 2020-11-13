@@ -1,5 +1,5 @@
 const ARROW_CODES = {
-    37: 'leFt',
+    37: 'left',
     38: 'up',
     39: 'right'
 }
